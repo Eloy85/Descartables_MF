@@ -58,9 +58,21 @@ namespace Descartables_MF
 
                 // Agrega las columnas de dataGridView1 a dataGridView2
                 dataGridView2.Columns.Clear(); // Limpia las columnas existentes en dataGridView2
-                foreach (DataGridViewColumn column in dataGridView1.Columns)
+                if (dataGridView2.Columns.Count == 0)
                 {
-                    dataGridView2.Columns.Add((DataGridViewColumn)column.Clone());
+                    foreach (DataGridViewColumn col in dataGridView1.Columns)
+                    {
+                        dataGridView2.Columns.Add((DataGridViewColumn)col.Clone());
+                    }
+
+                    // Agrega la columna "Cantidad" al final si no existe
+                    if (!dataGridView2.Columns.Contains("Cantidad"))
+                    {
+                        DataGridViewColumn cantidadColumn = new DataGridViewColumn(new DataGridViewTextBoxCell());
+                        cantidadColumn.HeaderText = "Cantidad";
+                        cantidadColumn.Name = "Cantidad";
+                        dataGridView2.Columns.Add(cantidadColumn);
+                    }
                 }
             }
         }
@@ -69,27 +81,62 @@ namespace Descartables_MF
         {
             if (dataGridView1.SelectedRows.Count > 0)
             {
-                if (dataGridView2.Columns.Count == 0)
+                using (CantidadForm cantidadForm = new CantidadForm())
                 {
-                    foreach (DataGridViewColumn col in dataGridView1.Columns)
+                    // Obtén la posición central de Form1
+                    Point centerPoint = new Point(this.Location.X + this.Width / 2, this.Location.Y + this.Height / 2);
+
+                    // Calcula la posición para centrar CantidadForm
+                    cantidadForm.StartPosition = FormStartPosition.Manual;
+                    cantidadForm.Left = centerPoint.X - cantidadForm.Width / 2;
+                    cantidadForm.Top = centerPoint.Y - cantidadForm.Height / 2;
+
+                    if (cantidadForm.ShowDialog() == DialogResult.OK)
                     {
-                        dataGridView2.Columns.Add((DataGridViewColumn)col.Clone());
+                        int cantidadSeleccionada = cantidadForm.CantidadSeleccionada;
+
+                        DataGridViewRow selectedRow = dataGridView1.SelectedRows[0];
+                        DataGridViewRow newRow = (DataGridViewRow)selectedRow.Clone();
+
+                        for (int i = 0; i < selectedRow.Cells.Count; i++)
+                        {
+                            newRow.Cells[i].Value = selectedRow.Cells[i].Value;
+                        }
+
+                        // Verifica si la columna "Cantidad" existe en dataGridView2
+                        DataGridViewColumn cantidadColumn = dataGridView2.Columns["Cantidad"];
+                        if (cantidadColumn != null)
+                        {
+                            int cantidadColumnIndex = cantidadColumn.Index;
+
+                            // Si la columna existe, verifica si la nueva fila tiene la celda "Cantidad"
+                            if (cantidadColumnIndex < newRow.Cells.Count)
+                            {
+                                newRow.Cells[cantidadColumnIndex].Value = cantidadSeleccionada;
+                            }
+                            else
+                            {
+                                // Si la celda "Cantidad" no existe, agrégala
+                                newRow.Cells.Add(new DataGridViewTextBoxCell { Value = cantidadSeleccionada });
+                            }
+                        }
+                        else
+                        {
+                            // Si la columna "Cantidad" no existe en dataGridView2, agrégala
+                            DataGridViewCell cantidadCell = new DataGridViewTextBoxCell { Value = cantidadSeleccionada };
+                            newRow.Cells.Add(cantidadCell);
+                        }
+
+                        dataGridView2.Rows.Add(newRow);
                     }
                 }
-                DataGridViewRow selectedRow = dataGridView1.SelectedRows[0];
-                DataGridViewRow newRow = (DataGridViewRow)selectedRow.Clone();
-
-                for (int i = 0; i < selectedRow.Cells.Count; i++)
-                {
-                    newRow.Cells[i].Value = selectedRow.Cells[i].Value;
-                }
-                dataGridView2.Rows.Add(newRow);
             }
             else
             {
                 MessageBox.Show("Por favor, seleccione una fila en la tabla de arriba", "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
         }
+
 
         private void dataGridView1_KeyDown(object sender, KeyEventArgs e)
         {
@@ -100,20 +147,55 @@ namespace Descartables_MF
                 // Verifica que haya al menos una fila seleccionada en dataGridView1
                 if (dataGridView1.SelectedRows.Count > 0)
                 {
-                    // Obtiene la fila seleccionada
-                    DataGridViewRow selectedRow = dataGridView1.SelectedRows[0];
-
-                    // Clona la fila seleccionada
-                    DataGridViewRow newRow = (DataGridViewRow)selectedRow.Clone();
-
-                    // Copia los valores de la fila seleccionada a la nueva fila
-                    for (int i = 0; i < selectedRow.Cells.Count; i++)
+                    using (CantidadForm cantidadForm = new CantidadForm())
                     {
-                        newRow.Cells[i].Value = selectedRow.Cells[i].Value;
-                    }
+                        // Obtén la posición central de Form1
+                        Point centerPoint = new Point(this.Location.X + this.Width / 2, this.Location.Y + this.Height / 2);
 
-                    // Agrega la nueva fila a dataGridView2
-                    dataGridView2.Rows.Add(newRow);
+                        // Calcula la posición para centrar CantidadForm
+                        cantidadForm.StartPosition = FormStartPosition.Manual;
+                        cantidadForm.Left = centerPoint.X - cantidadForm.Width / 2;
+                        cantidadForm.Top = centerPoint.Y - cantidadForm.Height / 2;
+
+                        if (cantidadForm.ShowDialog() == DialogResult.OK)
+                        {
+                            int cantidadSeleccionada = cantidadForm.CantidadSeleccionada;
+
+                            DataGridViewRow selectedRow = dataGridView1.SelectedRows[0];
+                            DataGridViewRow newRow = (DataGridViewRow)selectedRow.Clone();
+
+                            for (int i = 0; i < selectedRow.Cells.Count; i++)
+                            {
+                                newRow.Cells[i].Value = selectedRow.Cells[i].Value;
+                            }
+
+                            // Verifica si la columna "Cantidad" existe en dataGridView2
+                            DataGridViewColumn cantidadColumn = dataGridView2.Columns["Cantidad"];
+                            if (cantidadColumn != null)
+                            {
+                                int cantidadColumnIndex = cantidadColumn.Index;
+
+                                // Si la columna existe, verifica si la nueva fila tiene la celda "Cantidad"
+                                if (cantidadColumnIndex < newRow.Cells.Count)
+                                {
+                                    newRow.Cells[cantidadColumnIndex].Value = cantidadSeleccionada;
+                                }
+                                else
+                                {
+                                    // Si la celda "Cantidad" no existe, agrégala
+                                    newRow.Cells.Add(new DataGridViewTextBoxCell { Value = cantidadSeleccionada });
+                                }
+                            }
+                            else
+                            {
+                                // Si la columna "Cantidad" no existe en dataGridView2, agrégala
+                                DataGridViewCell cantidadCell = new DataGridViewTextBoxCell { Value = cantidadSeleccionada };
+                                newRow.Cells.Add(cantidadCell);
+                            }
+
+                            dataGridView2.Rows.Add(newRow);
+                        }
+                    }
                 }
             }
         }
@@ -139,7 +221,7 @@ namespace Descartables_MF
                 pd.PrintPage += new PrintPageEventHandler(PrintDocument_PrintPage);
 
                 // Configura el tamaño del papel (por ejemplo, carta)
-                pd.DefaultPageSettings.PaperSize = new PaperSize("CustomSize", 314, 390); // Ancho x Alto en cien milésimas de pulgada
+                pd.DefaultPageSettings.PaperSize = new PaperSize("A6", 410, 580); // Ancho x Alto en cien milésimas de pulgada
 
                 // Muestra el cuadro de diálogo de impresión
                 PrintDialog printDialog = new PrintDialog();
@@ -163,16 +245,18 @@ namespace Descartables_MF
             {
                 // Dibuja una imagen en el encabezado
                 Image headerImage = Properties.Resources.LogoEmpresa;
-                e.Graphics.DrawImage(headerImage, new PointF(20, 10));  // Ajusta la posición según tus necesidades
+                e.Graphics.DrawImage(headerImage, new PointF(80, 10));  // Ajusta la posición según tus necesidades
 
                 int y = 200; // Posición vertical inicial después de la imagen
 
                 // Imprime los encabezados de las columnas
                 int xHeader = 20;
+                int sumador = 0;
                 foreach (DataGridViewColumn column in dataGridView2.Columns)
                 {
-                    e.Graphics.DrawString(column.HeaderText, new Font("Arial", 10, FontStyle.Bold), Brushes.Black, new PointF(xHeader, y - 30));
-                    xHeader += 60; // Ajusta la posición horizontal para la siguiente columna
+                    e.Graphics.DrawString(column.HeaderText, new Font("Arial", 8, FontStyle.Bold), Brushes.Black, new PointF(xHeader, y - 30));
+                    xHeader += 100 + sumador; // Ajusta la posición horizontal para la siguiente columna
+                    sumador += 20;
                 }
 
                 foreach (DataGridViewRow row in dataGridView2.Rows)
@@ -180,14 +264,32 @@ namespace Descartables_MF
                     // Verifica si la fila y las celdas no son null
                     if (row != null && row.Cells.Count > 0)
                     {
-                        int x = 20; // Posición horizontal inicial
+                        float x = 20; // Posición horizontal inicial
                         foreach (DataGridViewCell cell in row.Cells)
                         {
                             // Verifica si el valor de la celda no es null
                             if (cell.Value != null)
                             {
-                                e.Graphics.DrawString(cell.Value.ToString(), dataGridView2.Font, Brushes.Black, new PointF(x, y));
-                                x += 60; // Ajusta la posición horizontal para la siguiente celda
+                                // Configura el ancho máximo para cada celda
+                                int cellWidth = 120;
+
+                                // Divide el contenido de la celda en líneas según el ancho máximo
+                                List<string> lines = GetLines(cell.Value.ToString(), cellWidth, e);
+
+                                // Imprime cada línea
+                                foreach (string line in lines)
+                                {
+                                    if (cell.OwningColumn.Name == "Cantidad")  // Verifica si es la columna de cantidades
+                                    {
+                                        // Agrega "x" antes de la cantidad
+                                        e.Graphics.DrawString("(x" + line.Trim() + ")", new Font("Arial", 8, FontStyle.Regular), Brushes.Black, new PointF(x, y));
+                                    }
+                                    else
+                                    {
+                                        e.Graphics.DrawString(line, new Font("Arial", 8, FontStyle.Regular), Brushes.Black, new PointF(x, y));
+                                    }
+                                    x += e.Graphics.MeasureString(line, new Font("Arial", 8, FontStyle.Regular)).Width; // Ajusta la posición horizontal para la siguiente línea
+                                }
                             }
                         }
                         y += 20; // Ajusta la posición vertical para la siguiente fila
@@ -196,15 +298,15 @@ namespace Descartables_MF
 
                 string nombreEmpleado = txt_employee_name.Text;
                 DateTime fecha = DateTime.Now;
-                e.Graphics.DrawString("Empleado: " + nombreEmpleado, new Font("Arial", 10, FontStyle.Regular), Brushes.Black, new PointF(20, y));
+                e.Graphics.DrawString("Empleado: " + nombreEmpleado, new Font("Arial", 8, FontStyle.Regular), Brushes.Black, new PointF(20, y));
                 y += 20;
-                e.Graphics.DrawString(fecha.ToString(), new Font("Arial", 10, FontStyle.Regular), Brushes.Black, new PointF(20, y));
+                e.Graphics.DrawString(fecha.ToString(), new Font("Arial", 8, FontStyle.Regular), Brushes.Black, new PointF(20, y));
                 y += 60;
-                e.Graphics.DrawString("Firma: ______________________________", new Font("Arial", 10, FontStyle.Regular), Brushes.Black, new PointF(20, y));
+                e.Graphics.DrawString("Firma: ______________________________", new Font("Arial", 8, FontStyle.Regular), Brushes.Black, new PointF(20, y));
 
                 // Configura el tamaño del ticket en píxeles
-                int ticketWidthInPixels = 302;
-                int ticketHeightInPixels = 375;
+                int ticketWidthInPixels = 500;
+                int ticketHeightInPixels = 700;
 
                 // Calcula el factor de escala para ajustar el contenido al tamaño deseado
                 float scaleX = (float)ticketWidthInPixels / e.PageSettings.PrintableArea.Width;
@@ -214,7 +316,7 @@ namespace Descartables_MF
                 e.Graphics.ScaleTransform(scaleX, scaleY);
 
                 // Configura el tamaño del papel
-                e.PageSettings.PaperSize = new PaperSize("Custom", 314, 390); // Ancho x Alto en cien milésimas de pulgada
+                e.PageSettings.PaperSize = new PaperSize("A6", 410, 580); // Ancho x Alto en cien milésimas de pulgada
 
                 // Calcula la posición de inicio para centrar el contenido en la página
                 int startX = (e.PageBounds.Width - dataGridView2.Width) / 2;
@@ -231,7 +333,29 @@ namespace Descartables_MF
             }
         }
 
+        private List<string> GetLines(string text, int maxWidth, PrintPageEventArgs e)
+        {
+            List<string> lines = new List<string>();
+            string[] words = text.Split(' ');
 
+            string currentLine = "";
+            foreach (string word in words)
+            {
+                if (e.Graphics.MeasureString(currentLine + word, dataGridView2.Font).Width <= maxWidth)
+                {
+                    currentLine += word + " ";
+                }
+                else
+                {
+                    lines.Add(currentLine);
+                    currentLine = word + " ";
+                }
+            }
+
+            lines.Add(currentLine);
+
+            return lines;
+        }
 
         private void btn_clean_fields_Click(object sender, EventArgs e)
         {
@@ -279,8 +403,6 @@ namespace Descartables_MF
                 RestoreOriginalData();
             }
         }
-
-
 
         private void RestoreOriginalData()
         {
