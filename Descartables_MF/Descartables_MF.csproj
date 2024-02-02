@@ -111,6 +111,9 @@
     <Content Include="Images\LogoEmpresa.jpg">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="Images\LogoEmpresa_header.jpg">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="LogoEmpresa_icono.ico" />
   </ItemGroup>
   <ItemGroup>

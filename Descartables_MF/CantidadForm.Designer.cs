@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(CantidadForm));
             this.label1 = new System.Windows.Forms.Label();
             this.numericUpDown1 = new System.Windows.Forms.NumericUpDown();
             this.btnAceptar = new System.Windows.Forms.Button();
@@ -81,6 +82,7 @@
             this.Controls.Add(this.btnAceptar);
             this.Controls.Add(this.numericUpDown1);
             this.Controls.Add(this.label1);
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "CantidadForm";
             this.Text = "Seleccione la cantidad";
             this.Load += new System.EventHandler(this.CantidadForm_Load);

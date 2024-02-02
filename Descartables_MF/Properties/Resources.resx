@@ -121,4 +121,7 @@
   <data name="LogoEmpresa" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Images\LogoEmpresa.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
+  <data name="LogoEmpresa_header" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\LogoEmpresa_header.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
 </root>

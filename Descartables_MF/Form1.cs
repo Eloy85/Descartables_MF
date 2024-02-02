@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Data.OleDb;
 using System.Drawing.Printing;
+using System.Data.Common;
 
 namespace Descartables_MF
 {
@@ -26,11 +27,14 @@ namespace Descartables_MF
             dataGridView1.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
             dataGridView2.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
             dataGridView1.KeyDown += dataGridView1_KeyDown;
+            txtSearch.KeyPress += txtSearch_KeyPress;
+            dataGridView1.KeyUp += dataGridView1_KeyUp;
         }
 
         private void Form1_Load(object sender, EventArgs e)
         {
             txtSearch.Enabled = false;
+            this.CenterToScreen();
         }
 
         private void btn_open_file_Click(object sender, EventArgs e)
@@ -221,7 +225,7 @@ namespace Descartables_MF
                 pd.PrintPage += new PrintPageEventHandler(PrintDocument_PrintPage);
 
                 // Configura el tamaño del papel (por ejemplo, carta)
-                pd.DefaultPageSettings.PaperSize = new PaperSize("A6", 410, 580); // Ancho x Alto en cien milésimas de pulgada
+                pd.DefaultPageSettings.PaperSize = new PaperSize("Custom", 315, 389); // Ancho x Alto en cien milésimas de pulgada
 
                 // Muestra el cuadro de diálogo de impresión
                 PrintDialog printDialog = new PrintDialog();
@@ -240,24 +244,26 @@ namespace Descartables_MF
 
         private void PrintDocument_PrintPage(object sender, PrintPageEventArgs e)
         {
+            Font fuente = new Font("Arial", 6, FontStyle.Regular);
             // Verifica si hay datos en dataGridView2
             if (dataGridView2 != null && dataGridView2.Rows.Count > 0)
             {
                 // Dibuja una imagen en el encabezado
-                Image headerImage = Properties.Resources.LogoEmpresa;
-                e.Graphics.DrawImage(headerImage, new PointF(80, 10));  // Ajusta la posición según tus necesidades
+                Image headerImage = Properties.Resources.LogoEmpresa_header;
+                e.Graphics.DrawImage(headerImage, new PointF(100, 5));  // Ajusta la posición según tus necesidades
 
-                int y = 200; // Posición vertical inicial después de la imagen
+                int y = 110; // Posición vertical inicial después de la imagen
 
-                // Imprime los encabezados de las columnas
+                /*// Imprime los encabezados de las columnas
                 int xHeader = 20;
                 int sumador = 0;
                 foreach (DataGridViewColumn column in dataGridView2.Columns)
                 {
-                    e.Graphics.DrawString(column.HeaderText, new Font("Arial", 8, FontStyle.Bold), Brushes.Black, new PointF(xHeader, y - 30));
+                    e.Graphics.DrawString(column.HeaderText, new Font("Arial", 6, FontStyle.Bold), Brushes.Black, new PointF(xHeader, y - 30));
                     xHeader += 100 + sumador; // Ajusta la posición horizontal para la siguiente columna
                     sumador += 20;
-                }
+                }*/
+                e.Graphics.DrawString("Descartables", new Font("Arial", 8, FontStyle.Bold), Brushes.Black, new PointF(130, y - 20));
 
                 foreach (DataGridViewRow row in dataGridView2.Rows)
                 {
@@ -282,13 +288,13 @@ namespace Descartables_MF
                                     if (cell.OwningColumn.Name == "Cantidad")  // Verifica si es la columna de cantidades
                                     {
                                         // Agrega "x" antes de la cantidad
-                                        e.Graphics.DrawString("(x" + line.Trim() + ")", new Font("Arial", 8, FontStyle.Regular), Brushes.Black, new PointF(x, y));
+                                        e.Graphics.DrawString("(x" + line.Trim() + ")", fuente, Brushes.Black, new PointF(x, y));
                                     }
                                     else
                                     {
-                                        e.Graphics.DrawString(line, new Font("Arial", 8, FontStyle.Regular), Brushes.Black, new PointF(x, y));
+                                        e.Graphics.DrawString(line, fuente, Brushes.Black, new PointF(x, y));
                                     }
-                                    x += e.Graphics.MeasureString(line, new Font("Arial", 8, FontStyle.Regular)).Width; // Ajusta la posición horizontal para la siguiente línea
+                                    x += e.Graphics.MeasureString(line, fuente).Width; // Ajusta la posición horizontal para la siguiente línea
                                 }
                             }
                         }
@@ -298,11 +304,11 @@ namespace Descartables_MF
 
                 string nombreEmpleado = txt_employee_name.Text;
                 DateTime fecha = DateTime.Now;
-                e.Graphics.DrawString("Empleado: " + nombreEmpleado, new Font("Arial", 8, FontStyle.Regular), Brushes.Black, new PointF(20, y));
-                y += 20;
-                e.Graphics.DrawString(fecha.ToString(), new Font("Arial", 8, FontStyle.Regular), Brushes.Black, new PointF(20, y));
+                e.Graphics.DrawString("Empleado: " + nombreEmpleado, fuente, Brushes.Black, new PointF(20, y - 10));
+                y += 10;
+                e.Graphics.DrawString(fecha.ToString(), fuente, Brushes.Black, new PointF(20, y));
                 y += 60;
-                e.Graphics.DrawString("Firma: ______________________________", new Font("Arial", 8, FontStyle.Regular), Brushes.Black, new PointF(20, y));
+                e.Graphics.DrawString("Firma: ______________________________", fuente, Brushes.Black, new PointF(20, y));
 
                 // Configura el tamaño del ticket en píxeles
                 int ticketWidthInPixels = 500;
@@ -316,7 +322,7 @@ namespace Descartables_MF
                 e.Graphics.ScaleTransform(scaleX, scaleY);
 
                 // Configura el tamaño del papel
-                e.PageSettings.PaperSize = new PaperSize("A6", 410, 580); // Ancho x Alto en cien milésimas de pulgada
+                e.PageSettings.PaperSize = new PaperSize("Custom", 315, 389); // Ancho x Alto en cien milésimas de pulgada
 
                 // Calcula la posición de inicio para centrar el contenido en la página
                 int startX = (e.PageBounds.Width - dataGridView2.Width) / 2;
@@ -411,6 +417,23 @@ namespace Descartables_MF
             {
                 dataGridView1.DataSource = originalDataTable;
                 txtSearch.Text = "";
+            }
+        }
+
+        private void txtSearch_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            if (e.KeyChar == (char)Keys.Enter)
+            {
+                e.Handled = true; // Evita que se procese el Enter por defecto
+                dataGridView1.Focus();
+            }
+        }
+
+        private void dataGridView1_KeyUp(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Escape)
+            {
+                txtSearch.Focus();
             }
         }
     }
