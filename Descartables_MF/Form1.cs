@@ -35,6 +35,57 @@ namespace Descartables_MF
         {
             txtSearch.Enabled = false;
             this.CenterToScreen();
+            // Especifica la ruta del archivo que deseas cargar
+            string filePath = Path.Combine(Application.StartupPath, "output_form_003_Mantenimiento_De_Productos.xlsx");
+
+            // Verifica si el archivo existe antes de intentar cargarlo
+            if (File.Exists(filePath))
+            {
+                // Carga automáticamente el archivo en el DataGridView
+                LoadExcelFile(filePath);
+            }
+        }
+
+        // Método para cargar el archivo Excel en el DataGridView
+        private void LoadExcelFile(string filePath)
+        {
+            string con = "Provider=Microsoft.ACE.OLEDB.12.0;Data Source={0};Extended Properties='Excel 8.0;HDR={1}'";
+            con = string.Format(con, filePath, "yes");
+            OleDbConnection excelconnection = new OleDbConnection(con);
+            excelconnection.Open();
+            DataTable dtexcel = excelconnection.GetOleDbSchemaTable(OleDbSchemaGuid.Tables, null);
+            string excelsheet = dtexcel.Rows[0]["TABLE_NAME"].ToString();
+            OleDbCommand com = new OleDbCommand("Select * from [" + excelsheet + "]", excelconnection);
+            OleDbDataAdapter oda = new OleDbDataAdapter(com);
+            DataTable dt = new DataTable();
+            oda.Fill(dt);
+            excelconnection.Close();
+
+            // Asigna la DataTable cargada al DataGridView
+            originalDataTable = dt;  // originalDataTable es la DataTable original cargada en dataGridView1
+            dataGridView1.DataSource = dt;
+
+            // Agrega las columnas de dataGridView1 a dataGridView2
+            dataGridView2.Columns.Clear(); // Limpia las columnas existentes en dataGridView2
+            if (dataGridView2.Columns.Count == 0)
+            {
+                foreach (DataGridViewColumn col in dataGridView1.Columns)
+                {
+                    dataGridView2.Columns.Add((DataGridViewColumn)col.Clone());
+                }
+
+                // Agrega la columna "Cantidad" al final
+                DataGridViewColumn cantidadColumn = new DataGridViewColumn(new DataGridViewTextBoxCell());
+                cantidadColumn.HeaderText = "Cantidad";
+                cantidadColumn.Name = "Cantidad";
+                dataGridView2.Columns.Add(cantidadColumn);
+            }
+
+            // Actualiza la etiqueta con el nombre del archivo cargado
+            label_file_name.Text = Path.GetFileName(filePath);
+
+            // Habilita el campo de búsqueda
+            txtSearch.Enabled = true;
         }
 
         private void btn_open_file_Click(object sender, EventArgs e)
@@ -44,40 +95,7 @@ namespace Descartables_MF
             if (op.ShowDialog() == DialogResult.OK)
             {
                 string filepath = op.FileName;
-                string con = "Provider=Microsoft.ACE.OLEDB.12.0;Data Source={0};Extended Properties='Excel 8.0;HDR={1}'";
-                con = string.Format(con, filepath, "yes");
-                OleDbConnection excelconnection = new OleDbConnection(con);
-                excelconnection.Open();
-                DataTable dtexcel = excelconnection.GetOleDbSchemaTable(OleDbSchemaGuid.Tables, null);
-                string excelsheet = dtexcel.Rows[0]["TABLE_NAME"].ToString();
-                OleDbCommand com = new OleDbCommand("Select * from [" + excelsheet + "]", excelconnection);
-                OleDbDataAdapter oda = new OleDbDataAdapter(com);
-                DataTable dt = new DataTable();
-                oda.Fill(dt);
-                excelconnection.Close();
-                label_file_name.Text = Path.GetFileName(filepath);
-                originalDataTable = dt;  // Asigna originalDataTable al DataTable cargado
-                dataGridView1.DataSource = dt;
-                txtSearch.Enabled = true;
-
-                // Agrega las columnas de dataGridView1 a dataGridView2
-                dataGridView2.Columns.Clear(); // Limpia las columnas existentes en dataGridView2
-                if (dataGridView2.Columns.Count == 0)
-                {
-                    foreach (DataGridViewColumn col in dataGridView1.Columns)
-                    {
-                        dataGridView2.Columns.Add((DataGridViewColumn)col.Clone());
-                    }
-
-                    // Agrega la columna "Cantidad" al final si no existe
-                    if (!dataGridView2.Columns.Contains("Cantidad"))
-                    {
-                        DataGridViewColumn cantidadColumn = new DataGridViewColumn(new DataGridViewTextBoxCell());
-                        cantidadColumn.HeaderText = "Cantidad";
-                        cantidadColumn.Name = "Cantidad";
-                        dataGridView2.Columns.Add(cantidadColumn);
-                    }
-                }
+                LoadExcelFile(filepath);
             }
         }
 
@@ -216,54 +234,59 @@ namespace Descartables_MF
 
         private void btn_print_ticket_Click(object sender, EventArgs e)
         {
-            // Verificar si hay datos en dataGridView2
-            if (dataGridView2.Rows.Count > 0)
+            try
             {
-                PrintDocument pd = new PrintDocument();
-
-                // Asocia el evento de impresión
-                pd.PrintPage += new PrintPageEventHandler(PrintDocument_PrintPage);
-
-                // Configura el tamaño del papel (por ejemplo, carta)
-                pd.DefaultPageSettings.PaperSize = new PaperSize("Custom", 315, 389); // Ancho x Alto en cien milésimas de pulgada
-
-                // Muestra el cuadro de diálogo de impresión
-                PrintDialog printDialog = new PrintDialog();
-                printDialog.Document = pd;
-
-                if (printDialog.ShowDialog() == DialogResult.OK)
+                // Verificar si hay datos en dataGridView2
+                if (dataGridView2.Rows.Count > 0)
                 {
-                    pd.Print();
+                    PrintDocument pd = new PrintDocument();
+
+                    // Asocia el evento de impresión
+                    pd.PrintPage += new PrintPageEventHandler(PrintDocument_PrintPage);
+
+                    // Configura el tamaño del papel (por ejemplo, carta)
+                    pd.DefaultPageSettings.PaperSize = new PaperSize("A6", 410, 580); // Ancho x Alto en cien milésimas de pulgada
+
+                    // Muestra el cuadro de diálogo de impresión
+                    PrintDialog printDialog = new PrintDialog();
+                    printDialog.Document = pd;
+
+                    if (printDialog.ShowDialog() == DialogResult.OK)
+                    {
+                        pd.Print();
+                    }
+                }
+                else
+                {
+                    MessageBox.Show("No hay datos para imprimir en el ticket.", "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 }
             }
-            else
+            catch (System.ComponentModel.Win32Exception win32Ex)
             {
-                MessageBox.Show("No hay datos para imprimir en el ticket.", "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show($"Error al imprimir: {win32Ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                // Puedes realizar otras acciones según tus necesidades
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Otro error: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                // Puedes manejar otros tipos de excepciones aquí
             }
         }
 
+
         private void PrintDocument_PrintPage(object sender, PrintPageEventArgs e)
         {
-            Font fuente = new Font("Arial", 6, FontStyle.Regular);
+            Font fuente = new Font("Arial", 10, FontStyle.Regular);
             // Verifica si hay datos en dataGridView2
             if (dataGridView2 != null && dataGridView2.Rows.Count > 0)
             {
                 // Dibuja una imagen en el encabezado
                 Image headerImage = Properties.Resources.LogoEmpresa_header;
-                e.Graphics.DrawImage(headerImage, new PointF(100, 5));  // Ajusta la posición según tus necesidades
+                e.Graphics.DrawImage(headerImage, new PointF(140, 5));  // Ajusta la posición según tus necesidades
 
                 int y = 110; // Posición vertical inicial después de la imagen
 
-                /*// Imprime los encabezados de las columnas
-                int xHeader = 20;
-                int sumador = 0;
-                foreach (DataGridViewColumn column in dataGridView2.Columns)
-                {
-                    e.Graphics.DrawString(column.HeaderText, new Font("Arial", 6, FontStyle.Bold), Brushes.Black, new PointF(xHeader, y - 30));
-                    xHeader += 100 + sumador; // Ajusta la posición horizontal para la siguiente columna
-                    sumador += 20;
-                }*/
-                e.Graphics.DrawString("Descartables", new Font("Arial", 8, FontStyle.Bold), Brushes.Black, new PointF(130, y - 20));
+                e.Graphics.DrawString("Descartables", new Font("Arial", 12, FontStyle.Bold), Brushes.Black, new PointF(150, y - 20));
 
                 foreach (DataGridViewRow row in dataGridView2.Rows)
                 {
@@ -277,10 +300,10 @@ namespace Descartables_MF
                             if (cell.Value != null)
                             {
                                 // Configura el ancho máximo para cada celda
-                                int cellWidth = 120;
+                                int cellWidth = 330;
 
                                 // Divide el contenido de la celda en líneas según el ancho máximo
-                                List<string> lines = GetLines(cell.Value.ToString(), cellWidth, e);
+                                List<string> lines = GetLines(cell.Value.ToString(), cellWidth, fuente, e);
 
                                 // Imprime cada línea
                                 foreach (string line in lines)
@@ -294,7 +317,16 @@ namespace Descartables_MF
                                     {
                                         e.Graphics.DrawString(line, fuente, Brushes.Black, new PointF(x, y));
                                     }
-                                    x += e.Graphics.MeasureString(line, fuente).Width; // Ajusta la posición horizontal para la siguiente línea
+                                    // Ajusta la posición para la siguiente línea
+                                    if (x + e.Graphics.MeasureString(line, fuente).Width <= cellWidth)
+                                    {
+                                        x += e.Graphics.MeasureString(line, fuente).Width;
+                                    }
+                                    else
+                                    {
+                                        x = 55;
+                                        y += 20;
+                                    }
                                 }
                             }
                         }
@@ -304,7 +336,7 @@ namespace Descartables_MF
 
                 string nombreEmpleado = txt_employee_name.Text;
                 DateTime fecha = DateTime.Now;
-                e.Graphics.DrawString("Empleado: " + nombreEmpleado, fuente, Brushes.Black, new PointF(20, y - 10));
+                e.Graphics.DrawString("Empleado: " + nombreEmpleado.ToUpper(), fuente, Brushes.Black, new PointF(20, y - 10));
                 y += 10;
                 e.Graphics.DrawString(fecha.ToString(), fuente, Brushes.Black, new PointF(20, y));
                 y += 60;
@@ -332,6 +364,9 @@ namespace Descartables_MF
                 e.Graphics.TranslateTransform(startX, startY);
                 dataGridView2.DrawToBitmap(new Bitmap(dataGridView2.Width, dataGridView2.Height), new Rectangle(0, 0, dataGridView2.Width, dataGridView2.Height));
                 e.Graphics.TranslateTransform(-startX, -startY);
+
+                //Limpiar los campos después de imprimir
+                CleanFields();
             }
             else
             {
@@ -339,15 +374,14 @@ namespace Descartables_MF
             }
         }
 
-        private List<string> GetLines(string text, int maxWidth, PrintPageEventArgs e)
+        private List<string> GetLines(string text, int maxWidth, Font fuente, PrintPageEventArgs e)
         {
             List<string> lines = new List<string>();
             string[] words = text.Split(' ');
-
             string currentLine = "";
             foreach (string word in words)
             {
-                if (e.Graphics.MeasureString(currentLine + word, dataGridView2.Font).Width <= maxWidth)
+                if (e.Graphics.MeasureString(currentLine + word, fuente).Width <= maxWidth)
                 {
                     currentLine += word + " ";
                 }
@@ -363,7 +397,7 @@ namespace Descartables_MF
             return lines;
         }
 
-        private void btn_clean_fields_Click(object sender, EventArgs e)
+        private void CleanFields()
         {
             txt_employee_name.Clear();
 
@@ -376,6 +410,11 @@ namespace Descartables_MF
 
                 RestoreOriginalData();
             }
+        }
+
+        private void btn_clean_fields_Click(object sender, EventArgs e)
+        {
+            CleanFields();
         }
 
         private void txtSearch_TextChanged(object sender, EventArgs e)

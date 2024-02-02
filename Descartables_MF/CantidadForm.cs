@@ -41,6 +41,15 @@ namespace Descartables_MF
             {
                 btnAceptar_Click(sender, e);
             }
+
+            if (e.KeyCode == Keys.Escape)
+            {
+                // Cierra la ventana actual (CantidadForm)
+                this.Close();
+
+                // Vuelve al formulario principal (Form1)
+                Form1.ActiveForm.Focus();
+            }
         }
     }
 }
