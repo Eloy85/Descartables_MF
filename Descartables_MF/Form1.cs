@@ -12,6 +12,7 @@ using System.Windows.Forms;
 using System.Data.OleDb;
 using System.Drawing.Printing;
 using System.Data.Common;
+using System.Diagnostics;
 
 namespace Descartables_MF
 {
@@ -28,7 +29,6 @@ namespace Descartables_MF
             dataGridView2.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
             dataGridView1.KeyDown += dataGridView1_KeyDown;
             txtSearch.KeyPress += txtSearch_KeyPress;
-            dataGridView1.KeyUp += dataGridView1_KeyUp;
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -86,6 +86,18 @@ namespace Descartables_MF
 
             // Habilita el campo de búsqueda
             txtSearch.Enabled = true;
+
+            if (dataGridView1.Columns.Count >= 2 && dataGridView1.Rows.Count > 0)
+            {
+                // Obtiene el nombre de la segunda columna (índice 1)
+                string nombreColumna = dataGridView1.Columns[1].Name;
+                OrdenarDataGridView1(nombreColumna);
+                dataGridView1.Focus();
+            }
+            else
+            {
+                MessageBox.Show("No hay suficientes columnas o filas en dataGridView1.", "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
         }
 
         private void btn_open_file_Click(object sender, EventArgs e)
@@ -105,14 +117,6 @@ namespace Descartables_MF
             {
                 using (CantidadForm cantidadForm = new CantidadForm())
                 {
-                    // Obtén la posición central de Form1
-                    Point centerPoint = new Point(this.Location.X + this.Width / 2, this.Location.Y + this.Height / 2);
-
-                    // Calcula la posición para centrar CantidadForm
-                    cantidadForm.StartPosition = FormStartPosition.Manual;
-                    cantidadForm.Left = centerPoint.X - cantidadForm.Width / 2;
-                    cantidadForm.Top = centerPoint.Y - cantidadForm.Height / 2;
-
                     if (cantidadForm.ShowDialog() == DialogResult.OK)
                     {
                         int cantidadSeleccionada = cantidadForm.CantidadSeleccionada;
@@ -276,56 +280,86 @@ namespace Descartables_MF
 
         private void PrintDocument_PrintPage(object sender, PrintPageEventArgs e)
         {
-            Font fuente = new Font("Arial", 10, FontStyle.Regular);
+            Font fuente = new Font("Arial", 9, FontStyle.Regular);
+            Font fuenteEncabezado = new Font("Arial", 11, FontStyle.Bold);
             // Verifica si hay datos en dataGridView2
             if (dataGridView2 != null && dataGridView2.Rows.Count > 0)
             {
                 // Dibuja una imagen en el encabezado
                 Image headerImage = Properties.Resources.LogoEmpresa_header;
-                e.Graphics.DrawImage(headerImage, new PointF(140, 5));  // Ajusta la posición según tus necesidades
+                e.Graphics.DrawImage(headerImage, new PointF(75, 0));  // Ajusta la posición según tus necesidades
 
-                int y = 110; // Posición vertical inicial después de la imagen
+                int y = 150; // Posición vertical inicial después de la imagen
 
-                e.Graphics.DrawString("Descartables", new Font("Arial", 12, FontStyle.Bold), Brushes.Black, new PointF(150, y - 20));
+                e.Graphics.DrawString("Descartables", fuenteEncabezado, Brushes.Black, new PointF(90, y - 50));
+
+                // Agregar encabezados
+                float xHeader = 0;
+                List<string> columnHeaders = new List<string> { "Codigo", "Cantidad", "Descripcion" }; // Ajusta los encabezados según tus necesidades
+
+                for (int i = 0; i < columnHeaders.Count; i++)
+                {
+                    DataGridViewColumn column = dataGridView2.Columns[columnHeaders[i]];
+                    string headerText = columnHeaders[i];
+
+                    if (column != null)
+                    {
+                        // Personaliza el texto del encabezado para la columna "Cantidad"
+                        if (columnHeaders[i] == "Cantidad")
+                        {
+                            headerText = "Cant.";
+                        }
+
+                        e.Graphics.DrawString(headerText, fuente, Brushes.Black, new PointF(xHeader, y - 20));
+                        xHeader += e.Graphics.MeasureString(headerText, fuente).Width; // Ajusta el espaciado entre encabezados
+                    }
+                }
+
+                y += 20;
 
                 foreach (DataGridViewRow row in dataGridView2.Rows)
                 {
                     // Verifica si la fila y las celdas no son null
                     if (row != null && row.Cells.Count > 0)
                     {
-                        float x = 20; // Posición horizontal inicial
-                        foreach (DataGridViewCell cell in row.Cells)
+                        float x = 0; // Posición horizontal inicial
+
+                        // Lista que almacena las posiciones de inicio para cada columna
+                        List<float> columnStartPositions = new List<float> { 0, 13, 37 };
+
+                        // Lista que almacena el orden de las columnas
+                        List<string> columnOrder = new List<string> { "Codigo", "Cantidad", "Descripcion" }; // Ajusta el orden según tus necesidades
+
+                        for (int columnIndex = 0; columnIndex < columnOrder.Count; columnIndex++)
                         {
-                            // Verifica si el valor de la celda no es null
-                            if (cell.Value != null)
+                            int cellIndex = row.Cells.Cast<DataGridViewCell>().ToList().FindIndex(cell => cell.OwningColumn.Name == columnOrder[columnIndex]);
+
+                            if (cellIndex != -1)
                             {
-                                // Configura el ancho máximo para cada celda
-                                int cellWidth = 330;
-
-                                // Divide el contenido de la celda en líneas según el ancho máximo
-                                List<string> lines = GetLines(cell.Value.ToString(), cellWidth, fuente, e);
-
-                                // Imprime cada línea
-                                foreach (string line in lines)
+                                DataGridViewCell cell = row.Cells[cellIndex];
+                                // Verifica si el valor de la celda no es null
+                                if (cell.Value != null)
                                 {
-                                    if (cell.OwningColumn.Name == "Cantidad")  // Verifica si es la columna de cantidades
+                                    // Configura el ancho máximo para cada celda
+                                    float cellWidth = 220;
+
+                                    // Divide el contenido de la celda en líneas según el ancho máximo
+                                    List<string> lines = GetLines(cell.Value.ToString(), cellWidth, fuente, e);
+
+                                    // Imprime cada línea
+                                    foreach (string line in lines)
                                     {
-                                        // Agrega "x" antes de la cantidad
-                                        e.Graphics.DrawString("(x" + line.Trim() + ")", fuente, Brushes.Black, new PointF(x, y));
-                                    }
-                                    else
-                                    {
-                                        e.Graphics.DrawString(line, fuente, Brushes.Black, new PointF(x, y));
-                                    }
-                                    // Ajusta la posición para la siguiente línea
-                                    if (x + e.Graphics.MeasureString(line, fuente).Width <= cellWidth)
-                                    {
-                                        x += e.Graphics.MeasureString(line, fuente).Width;
-                                    }
-                                    else
-                                    {
-                                        x = 55;
-                                        y += 20;
+                                        e.Graphics.DrawString(line.Trim(), fuente, Brushes.Black, new PointF(x + columnStartPositions[columnIndex], y));
+                                        // Ajusta la posición para la siguiente línea
+                                        if (x + e.Graphics.MeasureString(line, fuente).Width <= cellWidth - 25)
+                                        {
+                                            x += e.Graphics.MeasureString(line, fuente).Width;
+                                        }
+                                        else
+                                        {
+                                            x = 45;
+                                            y += 20;
+                                        }
                                     }
                                 }
                             }
@@ -336,11 +370,12 @@ namespace Descartables_MF
 
                 string nombreEmpleado = txt_employee_name.Text;
                 DateTime fecha = DateTime.Now;
-                e.Graphics.DrawString("Empleado: " + nombreEmpleado.ToUpper(), fuente, Brushes.Black, new PointF(20, y - 10));
-                y += 10;
-                e.Graphics.DrawString(fecha.ToString(), fuente, Brushes.Black, new PointF(20, y));
+                y += 20;
+                e.Graphics.DrawString("Empleado: " + nombreEmpleado.ToUpper(), fuente, Brushes.Black, new PointF(0, y));
+                y += 20;
+                e.Graphics.DrawString(fecha.ToString(), fuente, Brushes.Black, new PointF(0, y));
                 y += 60;
-                e.Graphics.DrawString("Firma: ______________________________", fuente, Brushes.Black, new PointF(20, y));
+                e.Graphics.DrawString("Firma: ______________________________", fuente, Brushes.Black, new PointF(0, y));
 
                 // Configura el tamaño del ticket en píxeles
                 int ticketWidthInPixels = 500;
@@ -374,26 +409,25 @@ namespace Descartables_MF
             }
         }
 
-        private List<string> GetLines(string text, int maxWidth, Font fuente, PrintPageEventArgs e)
+        private List<string> GetLines(string text, float maxWidth, Font fuente, PrintPageEventArgs e)
         {
             List<string> lines = new List<string>();
-            string[] words = text.Split(' ');
+            string[] words = text.Trim().Split(' ');
             string currentLine = "";
             foreach (string word in words)
             {
-                if (e.Graphics.MeasureString(currentLine + word, fuente).Width <= maxWidth)
+                if (e.Graphics.MeasureString(currentLine + word.Trim(), fuente).Width <= maxWidth)
                 {
-                    currentLine += word + " ";
+                    currentLine += word.Trim() + " ";
                 }
                 else
                 {
-                    lines.Add(currentLine);
-                    currentLine = word + " ";
+                    lines.Add(currentLine.Trim());
+                    currentLine = word.Trim() + " ";
                 }
             }
 
-            lines.Add(currentLine);
-
+            lines.Add(currentLine.Trim());
             return lines;
         }
 
@@ -468,11 +502,16 @@ namespace Descartables_MF
             }
         }
 
-        private void dataGridView1_KeyUp(object sender, KeyEventArgs e)
+        private void OrdenarDataGridView1(string columnName)
         {
-            if (e.KeyCode == Keys.Escape)
+            // Verifica si hay datos en el dataGridView1
+            if (dataGridView1.DataSource is DataTable dataTable)
             {
-                txtSearch.Focus();
+                // Ordena el DataTable por la columna 2
+                dataTable.DefaultView.Sort = columnName + " ASC";
+
+                // Vuelve a asignar la fuente de datos al DataGridView
+                dataGridView1.DataSource = dataTable;
             }
         }
     }
